@@ -1,5 +1,6 @@
 import json
 import re
+import os
 
 def makediff():
     path1 = "zh_CN/gamedata/excel/roguelike_topic_table.json"
@@ -16,6 +17,7 @@ def makediff():
 
 def make_new_items(js, name):
     end_items = []
+    teams = []
     with open('items.txt', mode='w', encoding='utf-8', errors='ignore') as f:
         old_items = []
         for n in js["details"]:
@@ -46,12 +48,16 @@ def make_new_items(js, name):
             print(item['usage'], file=f)
 
         print('=' * 30, file=f)
-        print('\n*****普通藏品、分队及物品\n', file=f)
+        print('\n*****普通藏品及物品\n', file=f)
         for item0 in items:
             item = item0['value']
             if item['usage'].find('让探索开启不同的方向') != -1:
                 continue
             if item['usage'].find('机制物品') != -1:
+                continue
+            if item['name'].strip().find('分队') != -1:
+                if item['name'].strip() not in teams:
+                    teams.append(item)
                 continue
             if item['name'].strip() in old_items:
                 if item['name'].strip() not in dup_items:
@@ -60,6 +66,16 @@ def make_new_items(js, name):
             print('=' * 30, file=f)
             print(item['name']+'\n', file=f)
             print(item['usage'], file=f)
+
+        print('\n\n肉鸽中可用的旧藏品还有：' + '、'.join(dup_items), file=f)
+
+    with open('teams.txt', mode='w', encoding='utf-8', errors='ignore') as f:
+        print('*****分队（有重复的就是不同级别的分队，大量重复的可能是随机获取其他分队的效果，如异想天开）\n', file=f)
+        for t in teams:
+            print('=' * 30, file=f)
+            print(t['name']+'\n', file=f)
+            print(t['usage'], file=f)
+
     return end_items
 
 def deal(ans):
@@ -249,6 +265,16 @@ def make_new_endings(js, n):
             if 'changeEndingDesc' in ending and ending['changeEndingDesc']:
                 print(ending['changeEndingDesc'], file=f)
 
+            print('\n', file=f)
+            part = 1
+            content = ''
+            while os.path.exists(f'zh_CN/gamedata/story/obt/rogue/{n}/endbook/endbook_{n}_{cnt}_{part}.txt'):
+                with open(f'zh_CN/gamedata/story/obt/rogue/{n}/endbook/endbook_{n}_{cnt}_{part}.txt', mode='r', encoding='utf-8', errors='ignore') as fr:
+                    content += ''.join(fr.readlines())
+                    content += '\n' + '=' * 30 + '\n'
+                    part += 1
+            print(content, file=f)
+
     with open('ending_stories.txt', mode='w', encoding='utf-8', errors='ignore') as f:
         cnt = 0
         for ending0 in endings:
@@ -261,7 +287,7 @@ def make_new_endings(js, n):
                     break
             cnt += 1
             print('=' * 30, file=f)
-            print(f"第{cnt}结局 {ending['name']} 剧情\n", file=f)
+            print(f"第{cnt}结局 {ending['name']} 通关剧情\n", file=f)
             if "avgId" in st:
                 path = 'zh_CN/gamedata/story/' + st['avgId'].lower() + '.txt'
             else:
